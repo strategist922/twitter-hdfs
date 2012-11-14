@@ -9,6 +9,7 @@ All the content of HiveConn have been generate using thrifts client generator in
 - Net::Twitter::Stream
 - Thrift
 - Thrift::XS
+
 #Other
 - Two instances of a running hive-server (may be compatible with hive-server2 but not tested).
 - Pig
