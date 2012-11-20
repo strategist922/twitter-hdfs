@@ -24,13 +24,8 @@ use Thrift::BinaryProtocol;
 use lib <./HiveConn>;
 use ThriftHive;
 sub hive_push {
-	my ($date, $filenr) = @_;
-	#change the follwing to according to your cluster. 
-	#This hive server instance needs to be running on the same host as the script.
-	my serveraddr = "h-apps1.local";
-	my serverport = 10000;
-
-	my $socket = Thrift::Socket->new(serveraddr, serverport);
+	my ($date, $filenr, $tempdir, $hive_addr, $hive_port) = @_;
+	my $socket = Thrift::Socket->new($hive_addr, $hive_port);
 	$socket->setSendTimeout(600 * 1000); # 10min.
 	$socket->setRecvTimeout(600 * 1000);
 	my $transport = Thrift::BufferedTransport->new($socket);
@@ -40,20 +35,16 @@ sub hive_push {
 
 	eval {
 		$transport->open();
-		my $query = "LOAD DATA LOCAL INPATH '/tmp/${date}/${filenr}' INTO TABLE twitter_raw PARTITION (yymmdd = '${date}')";
+		my $query = "LOAD DATA LOCAL INPATH '${tempdir}${date}/${filenr}' INTO TABLE twitter_raw PARTITION (yymmdd = '${date}')";
 		$client->execute($query);
 		$transport->close();
 	};
 }
 sub process_tweets {
-	my ($date) = @_;
-	#change the follwing to according to your cluster. 
-	my serveraddr = "h-apps1.local";
-	my serverport = 10001;
-	
+	my ($date, $hive_addr, $hive_port) = @_;
 	unless (my $pid = fork) {
         die "Couldn't fork" unless defined $pid;
-		my $socket = Thrift::Socket->new(serveraddr, serverport);
+		my $socket = Thrift::Socket->new($hive_addr, $hive_port);
 		$socket->setSendTimeout(600 * 1000);
 		$socket->setRecvTimeout(600 * 1000);
 		my $transport = Thrift::BufferedTransport->new($socket);

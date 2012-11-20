@@ -19,26 +19,35 @@ use encoding "utf-8";
 use strict;
 use warnings;
 use Net::Twitter::Stream;
+use Config::Simple;
 require tweet;
 sub streamer{
-	my $username = 'twitter user name';
-	my $password = 'twitter password';
-	our $filesize = 10000;
-	our $lang = "en";
+	my $cfg = new Config::Simple('/etc/lazydrone.conf');
+	if(!$cfg){
+		print 'Error: Conf could not be read.\n';
+		return -1;
+	}
+	my $username = $cfg->param("twitter-hdfs.twitter-user");
+	my $password = $cfg->param("twitter-hdfs.twitter-pass");
+	our $filesize = $cfg->param("twitter-hdfs.file-size");
+	our $lang = $cfg->param("twitter-hdfs.work-lang");
+	our $tempdir = $cfg->param("twitter-hdfs.work-dir");
+	our $tempfile = $cfg->param("twitter-hdfs.work-file");
+	our $hive1_addr = $cfg->param("twitter-hdfs.hive1-addr");
+	our $hive1_port = $cfg->param("twitter-hdfs.hive1-port");
+	our $hive2_addr = $cfg->param("twitter-hdfs.hive2-addr");
+	our $hive2_port = $cfg->param("twitter-hdfs.hive2-port");
+	if(!$username || !$password || !$filesize || !$lang || !$tempdir || !$tempfile || !$hive1_addr || !$hive1_port || !$hive2_addr || !$hive2_port){
+		print 'Error: one or more values are missing from config file.\n';	
+		return -1;
+	}
 	our $filenr = 0;
 	our $linenr = 0;
 	our $active_date;
 	our $last_date;
 	our $date_set = 0;
 	
-	#daemonize
-	close(STDIN);
-	close(STDOUT);
-	close(STDERR);
-	exit if (fork());
-	exit if (fork());
-	
-	open OUTPUT, ">/tmp/twitter" or die "Cant open file: $!";
+	open OUTPUT, ">$tempfile" or die "Cant open file: $!";
 	Net::Twitter::Stream->new ( user => $username, pass => $password,
 								callback => \&got_tweet,
 								connection_closed_cb => \&connection_closed,
@@ -69,7 +78,7 @@ sub streamer{
 				close(OUTPUT);
 				move_file($tweet_date);
 				$linenr = 0;
-				open OUTPUT, ">/tmp/twitter" or die "Cant open file $!";
+				open OUTPUT, ">$tempfile" or die "Cant open file $!";
 			}
 
 		}
@@ -77,26 +86,26 @@ sub streamer{
 	sub move_file {
 		my ($tweet_date) = @_;
 		if($active_date == $tweet_date){        
-			unless(-e "/tmp/${active_date}/"){
-				system("mkdir", "/tmp/${active_date}/");
+			unless(-e "${tempdir}${active_date}/"){
+				system("mkdir", "${tempdir}${active_date}/");
 			}
 		}else{
 			$last_date = $active_date;
 			$active_date = $tweet_date;
-			unless(-e "/tmp/${active_date}/"){
-				system("mkdir", "/tmp/${active_date}/");
+			unless(-e "${tempdir}${active_date}/"){
+				system("mkdir", "${tempdir}${active_date}/");
 			}
-			system("rm", "-r", "/tmp/${last_date}");
-			tweet::process_tweets($last_date);
+			system("rm", "-r", "${tempdir}${last_date}");
+			tweet::process_tweets($last_date, $hive2_addr, $hive2_port);
 			$filenr = 0;
 		}
-		my $file = "/tmp/${active_date}/${filenr}";
+		my $file = "${tempdir}${active_date}/${filenr}";
 		while(-e $file){
 			$filenr++;
-			$file = "/tmp/${active_date}/${filenr}";
+			$file = "${tempdir}${active_date}/${filenr}";
 		}
-		system("mv","/tmp/twitter",$file); 
-		tweet::hive_push($active_date, $filenr);
+		system("mv",$tempfile,$file); 
+		tweet::hive_push($active_date, $filenr, $tempdir, $hive1_addr, $hive1_port);
 		$linenr = 0;
 	}
 }
