@@ -21,6 +21,14 @@ sub get_id {
 	my($input) = @_;
 	return md5_hex($input);
 }
+sub backup {
+	my($date, $backup_host) = @_;
+	system("cp", "-r", "/tmp/$date", "./yymmdd=$date");
+	system("tar", "-zcvf", "$date.tar.gz", "yymmdd=$date");
+	system("scp", "$date.tar.gz", $backup_host);
+	system("rm", "$date.tar.gz");
+	system("rm", "-r", "yymmdd=$date");
+}
 sub fix_date {
 	my($date) = @_;
 	my %months = ("Jan" => "01",

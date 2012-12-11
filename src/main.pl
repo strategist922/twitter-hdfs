@@ -37,7 +37,8 @@ sub streamer{
 	our $hive1_port = $cfg->param("twitter-hdfs.hive1-port");
 	our $hive2_addr = $cfg->param("twitter-hdfs.hive2-addr");
 	our $hive2_port = $cfg->param("twitter-hdfs.hive2-port");
-	if(!$username || !$password || !$filesize || !$lang || !$tempdir || !$tempfile || !$hive1_addr || !$hive1_port || !$hive2_addr || !$hive2_port){
+	our $backup_host = $cfg->param("twitter-hdfs.backup-host");
+	if(!$username || !$password || !$filesize || !$lang || !$tempdir || !$tempfile || !$hive1_addr || !$hive1_port || !$hive2_addr || !$hive2_port || !$backup_host){
 		print 'Error: one or more values are missing from config file.\n';	
 		return -1;
 	}
@@ -95,8 +96,7 @@ sub streamer{
 			unless(-e "${tempdir}${active_date}/"){
 				system("mkdir", "${tempdir}${active_date}/");
 			}
-			system("rm", "-r", "${tempdir}${last_date}");
-			tweet::process_tweets($last_date, $hive2_addr, $hive2_port);
+			tweet::process_tweets($last_date, $hive2_addr, $hive2_port, $last_date, $backup_host);
 			$filenr = 0;
 		}
 		my $file = "${tempdir}${active_date}/${filenr}";

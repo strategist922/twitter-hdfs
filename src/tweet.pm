@@ -41,9 +41,13 @@ sub hive_push {
 	};
 }
 sub process_tweets {
-	my ($date, $hive_addr, $hive_port) = @_;
+	my ($date, $hive_addr, $hive_port, $last_date, $backup_host) = @_;
 	unless (my $pid = fork) {
         die "Couldn't fork" unless defined $pid;
+		if($backup_host ne 'false'){
+			stfunc::backup($date, $backup_host);
+		}
+		system("rm", "-r", "${tempdir}${last_date}");
 		my $socket = Thrift::Socket->new($hive_addr, $hive_port);
 		$socket->setSendTimeout(600 * 1000);
 		$socket->setRecvTimeout(600 * 1000);
