@@ -24,9 +24,7 @@ sub get_id {
 sub backup {
 	my($date, $backup_host) = @_;
 	system("cp", "-r", "/tmp/$date", "./yymmdd=$date");
-	system("tar", "-zcvf", "$date.tar.gz", "yymmdd=$date");
-	system("scp", "$date.tar.gz", $backup_host);
-	system("rm", "$date.tar.gz");
+	system("scp", "yymmdd=$date", $backup_host);
 	system("rm", "-r", "yymmdd=$date");
 }
 sub fix_date {

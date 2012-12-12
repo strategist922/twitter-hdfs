@@ -57,11 +57,8 @@ sub process_tweets {
 		system("pig", "-param", "date=${date}", "twitter.pig");
 		eval{
 			$transport->open();
-			$client->execute("ALTER TABLE twitter_hash_count ADD PARTITION (yymmdd = ${date})");
 			$client->execute("ALTER TABLE twitter_hash_index ADD PARTITION (yymmdd = ${date})");
-			$client->execute("ALTER TABLE twitter_pair_count ADD PARTITION (yymmdd = ${date})");
-			$client->execute("ALTER TABLE twitter_pair_index ADD PARTITION (yymmdd = ${date})");
-			$client->execute("ALTER TABLE twitter_word_count ADD PARTITION (yymmdd = ${date})");
+			$client->execute("ALTER TABLE twitter_pattern_index ADD PARTITION (yymmdd = ${date})");
 			$client->execute("ALTER TABLE twitter_word_index ADD PARTITION (yymmdd = ${date})");
 			$client->execute("ALTER TABLE twitter_tweet ADD PARTITION (yymmdd = ${date})");
 			$transport->close();
